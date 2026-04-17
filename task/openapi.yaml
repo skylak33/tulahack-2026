@@ -1,0 +1,516 @@
+openapi: 3.1.0
+info:
+  title: Team Builder API
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:8000
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    Role:
+      type: string
+      enum: [manager, employee, candidate]
+
+    TeamRole:
+      type: string
+      enum: [junior, middle, senior, lead, principal]
+
+    Generation:
+      type: string
+      enum: [Z, Y, X, boomer]
+
+    DiscProfile:
+      type: object
+      properties:
+        D: { type: integer, minimum: 0, maximum: 100 }
+        I: { type: integer, minimum: 0, maximum: 100 }
+        S: { type: integer, minimum: 0, maximum: 100 }
+        C: { type: integer, minimum: 0, maximum: 100 }
+      required: [D, I, S, C]
+
+    MotivationProfile:
+      type: object
+      description: Свободная JSON-структура мотивационного профиля
+      additionalProperties: true
+
+    UserShort:
+      type: object
+      properties:
+        id:        { type: string, format: uuid }
+        email:     { type: string, format: email }
+        full_name: { type: string }
+        role:      { $ref: '#/components/schemas/Role' }
+
+    UserFull:
+      allOf:
+        - $ref: '#/components/schemas/UserShort'
+        - type: object
+          properties:
+            age:                { type: integer }
+            generation:         { $ref: '#/components/schemas/Generation' }
+            team_role:          { $ref: '#/components/schemas/TeamRole' }
+            disc_profile:       { $ref: '#/components/schemas/DiscProfile' }
+            motivation_profile: { $ref: '#/components/schemas/MotivationProfile' }
+            created_at:         { type: string, format: date-time }
+            updated_at:         { type: string, format: date-time }
+
+    UserCreate:
+      type: object
+      required: [email, password, full_name, role]
+      properties:
+        email:              { type: string, format: email }
+        password:           { type: string, minLength: 8 }
+        full_name:          { type: string }
+        role:               { $ref: '#/components/schemas/Role' }
+        age:                { type: integer }
+        generation:         { $ref: '#/components/schemas/Generation' }
+        team_role:          { $ref: '#/components/schemas/TeamRole' }
+        disc_profile:       { $ref: '#/components/schemas/DiscProfile' }
+        motivation_profile: { $ref: '#/components/schemas/MotivationProfile' }
+
+    UserUpdate:
+      type: object
+      properties:
+        full_name:          { type: string }
+        age:                { type: integer }
+        generation:         { $ref: '#/components/schemas/Generation' }
+        team_role:          { $ref: '#/components/schemas/TeamRole' }
+        disc_profile:       { $ref: '#/components/schemas/DiscProfile' }
+        motivation_profile: { $ref: '#/components/schemas/MotivationProfile' }
+
+    TokenPair:
+      type: object
+      properties:
+        access_token:  { type: string }
+        refresh_token: { type: string }
+        token_type:    { type: string, example: bearer }
+
+    Team:
+      type: object
+      properties:
+        id:         { type: string, format: uuid }
+        name:       { type: string }
+        manager_id: { type: string, format: uuid }
+        members:
+          type: array
+          items: { $ref: '#/components/schemas/UserShort' }
+        created_at: { type: string, format: date-time }
+
+    TeamCreate:
+      type: object
+      required: [name]
+      properties:
+        name: { type: string }
+
+    CandidateResult:
+      type: object
+      properties:
+        user:                   { $ref: '#/components/schemas/UserFull' }
+        compatibility_score:    { type: number, minimum: 0, maximum: 1 }
+        compatibility_summary:  { type: string, description: Текстовое объяснение от Gemini }
+        strengths:
+          type: array
+          items: { type: string }
+        risks:
+          type: array
+          items: { type: string }
+
+    SearchRequest:
+      type: object
+      properties:
+        id:            { type: string, format: uuid }
+        manager_id:    { type: string, format: uuid }
+        query_text:    { type: string }
+        gemini_result:
+          type: object
+          properties:
+            candidates:
+              type: array
+              items: { $ref: '#/components/schemas/CandidateResult' }
+            summary: { type: string }
+        created_at:    { type: string, format: date-time }
+
+    Error:
+      type: object
+      properties:
+        detail: { type: string }
+
+security:
+  - BearerAuth: []
+
+paths:
+
+  # ── Auth ──────────────────────────────────────────────────────────────────
+
+  /auth/register:
+    post:
+      tags: [auth]
+      summary: Регистрация нового пользователя
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UserCreate' }
+      responses:
+        '201':
+          description: Пользователь создан
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/UserFull' }
+        '409':
+          description: Email уже занят
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+  /auth/login:
+    post:
+      tags: [auth]
+      summary: Получить JWT токены
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:    { type: string, format: email }
+                password: { type: string }
+      responses:
+        '200':
+          description: Токены выданы
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TokenPair' }
+        '401':
+          description: Неверные credentials
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+  /auth/refresh:
+    post:
+      tags: [auth]
+      summary: Обновить access token
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [refresh_token]
+              properties:
+                refresh_token: { type: string }
+      responses:
+        '200':
+          description: Новый access token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TokenPair' }
+        '401':
+          description: Refresh token невалиден или истёк
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+  # ── Users ─────────────────────────────────────────────────────────────────
+
+  /users/me:
+    get:
+      tags: [users]
+      summary: Профиль текущего пользователя
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/UserFull' }
+
+    patch:
+      tags: [users]
+      summary: Обновить свой профиль
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UserUpdate' }
+      responses:
+        '200':
+          description: Профиль обновлён
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/UserFull' }
+
+  /users:
+    get:
+      tags: [users]
+      summary: Список пользователей (только manager)
+      parameters:
+        - name: role
+          in: query
+          schema: { $ref: '#/components/schemas/Role' }
+        - name: team_role
+          in: query
+          schema: { $ref: '#/components/schemas/TeamRole' }
+        - name: limit
+          in: query
+          schema: { type: integer, default: 50 }
+        - name: offset
+          in: query
+          schema: { type: integer, default: 0 }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  total: { type: integer }
+                  items:
+                    type: array
+                    items: { $ref: '#/components/schemas/UserShort' }
+        '403':
+          description: Нет доступа
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+    post:
+      tags: [users]
+      summary: Создать пользователя (только manager)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UserCreate' }
+      responses:
+        '201':
+          description: Пользователь создан
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/UserFull' }
+
+  /users/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+
+    get:
+      tags: [users]
+      summary: Профиль пользователя по id (только manager)
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/UserFull' }
+        '404':
+          description: Не найден
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+    patch:
+      tags: [users]
+      summary: Обновить профиль пользователя (только manager)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UserUpdate' }
+      responses:
+        '200':
+          description: Обновлён
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/UserFull' }
+
+    delete:
+      tags: [users]
+      summary: Удалить пользователя (только manager)
+      responses:
+        '204':
+          description: Удалён
+
+  # ── Teams ─────────────────────────────────────────────────────────────────
+
+  /teams:
+    get:
+      tags: [teams]
+      summary: Команды текущего менеджера
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Team' }
+
+    post:
+      tags: [teams]
+      summary: Создать команду
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/TeamCreate' }
+      responses:
+        '201':
+          description: Команда создана
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Team' }
+
+  /teams/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+
+    get:
+      tags: [teams]
+      summary: Команда с участниками
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Team' }
+
+    delete:
+      tags: [teams]
+      summary: Удалить команду
+      responses:
+        '204':
+          description: Удалена
+
+  /teams/{id}/members:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+
+    post:
+      tags: [teams]
+      summary: Добавить участника в команду
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [user_id]
+              properties:
+                user_id: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Участник добавлен
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Team' }
+
+  /teams/{id}/members/{user_id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+      - name: user_id
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+
+    delete:
+      tags: [teams]
+      summary: Убрать участника из команды
+      responses:
+        '204':
+          description: Убран
+
+  # ── Search ────────────────────────────────────────────────────────────────
+
+  /search:
+    post:
+      tags: [search]
+      summary: Создать запрос на подбор (только manager)
+      description: |
+        Принимает свободный текст от менеджера, сравнивает с профилями кандидатов
+        и текущей командой через Gemini, возвращает ранжированный список кандидатов.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [query_text, team_id]
+              properties:
+                query_text: { type: string, description: Свободный текст с требованиями }
+                team_id:    { type: string, format: uuid, description: Команда для оценки совместимости }
+      responses:
+        '201':
+          description: Результат подбора
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SearchRequest' }
+
+    get:
+      tags: [search]
+      summary: История запросов менеджера
+      parameters:
+        - name: limit
+          in: query
+          schema: { type: integer, default: 20 }
+        - name: offset
+          in: query
+          schema: { type: integer, default: 0 }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  total: { type: integer }
+                  items:
+                    type: array
+                    items: { $ref: '#/components/schemas/SearchRequest' }
+
+  /search/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+
+    get:
+      tags: [search]
+      summary: Конкретный запрос с полным результатом
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SearchRequest' }
+        '404':
+          description: Не найден
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }

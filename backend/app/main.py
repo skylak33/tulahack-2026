@@ -19,6 +19,3 @@ app.include_router(users_router)
 @app.get("/health")
 async def health_check():
     return {"status": "ok"}
-
-# pip uninstall jwt pyjwt
-# pip install pyjwt

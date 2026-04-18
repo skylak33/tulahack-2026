@@ -23,6 +23,11 @@
       />
     </div>
 
+    <div v-if="search.verdict?.summary" class="mt-4 p-3 rounded-xl bg-surface-50 border border-ink-100">
+      <p class="text-xs font-semibold text-ink-400 mb-1 uppercase tracking-wide">Вывод Gemini</p>
+      <p class="text-sm text-ink-500">{{ search.verdict.summary }}</p>
+    </div>
+
     <p class="text-xs text-ink-300 mt-4">
       Запрос создан {{ formatDate(search.created_at) }}
     </p>
@@ -39,7 +44,7 @@ const props = defineProps({
   expanded: { type: Boolean, default: false },
 })
 
-const candidates = computed(() => props.search.verdict || [])
+const candidates = computed(() => props.search.verdict?.candidates || [])
 
 function formatDate(iso) {
   if (!iso) return ''

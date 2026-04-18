@@ -34,9 +34,19 @@
               <p class="text-xs text-ink-300 mt-1.5">{{ queryText.length }} символов · минимум 20</p>
             </div>
 
+            <div>
+              <label class="label">Команда для оценки совместимости</label>
+              <select v-model="selectedTeamId" class="input-base">
+                <option value="">Выберите команду</option>
+                <option v-for="team in teamsStore.teams" :key="team.id" :value="team.id">
+                  {{ team.name }}
+                </option>
+              </select>
+            </div>
+
             <button
               class="btn-primary btn-md w-full"
-              :disabled="queryText.length < 20 || searchStore.loading"
+              :disabled="queryText.length < 20 || !selectedTeamId || searchStore.loading"
               @click="handleSearch"
             >
               <Spinner v-if="searchStore.loading" size="sm" />
@@ -86,8 +96,8 @@
               </p>
               <div class="flex items-center gap-2 mt-1.5">
                 <span class="text-xs text-ink-300">{{ formatDate(item.created_at) }}</span>
-                <span v-if="item.verdict?.length" class="badge-jade text-xs">
-                  {{ item.verdict.length }} кандидатов
+                <span v-if="item.verdict?.candidates?.length" class="badge-jade text-xs">
+                  {{ item.verdict.candidates.length }} кандидатов
                 </span>
               </div>
             </button>
@@ -102,14 +112,20 @@
 import { ref, onMounted } from 'vue'
 import { Search, Clock, Sparkles } from 'lucide-vue-next'
 import { useSearchStore } from '@/stores/search'
+import { useTeamsStore } from '@/stores/teams'
 import Spinner from '@/shared/components/Spinner.vue'
 import EmptyState from '@/shared/components/EmptyState.vue'
 import SearchResultCard from './SearchResultCard.vue'
 
 const searchStore = useSearchStore()
+const teamsStore = useTeamsStore()
 const queryText = ref('')
+const selectedTeamId = ref('')
 
-onMounted(() => searchStore.fetchHistory())
+onMounted(() => {
+  searchStore.fetchHistory()
+  teamsStore.fetchTeams()
+})
 
 function formatDate(iso) {
   if (!iso) return ''
@@ -117,7 +133,7 @@ function formatDate(iso) {
 }
 
 async function handleSearch() {
-  await searchStore.createSearch(queryText.value)
+  await searchStore.createSearch(queryText.value, selectedTeamId.value)
 }
 
 async function loadSearch(id) {

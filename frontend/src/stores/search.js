@@ -2,6 +2,37 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { searchApi } from '@/shared/api/search'
 
+// Normalize backend CandidateResult → flat shape expected by CandidateCard
+function normalizeCandidate(c) {
+  const u = c.user || {}
+  return {
+    id: u.id,
+    user_id: u.id,
+    full_name: u.full_name,
+    team_role: u.team_role,
+    age: u.age,
+    disc_profile: u.disc_profile,
+    motivation_profile: u.motivation_profile,
+    compatibility_score: c.compatibility_score,
+    description: c.compatibility_summary,
+    strengths: c.strengths || [],
+    risks: c.risks || [],
+  }
+}
+
+// Normalize full SearchRequest returned by backend
+function normalizeSearch(raw) {
+  if (!raw) return raw
+  const candidates = raw.verdict?.candidates?.map(normalizeCandidate) ?? []
+  return {
+    ...raw,
+    verdict: {
+      candidates,
+      summary: raw.verdict?.summary ?? '',
+    },
+  }
+}
+
 export const useSearchStore = defineStore('search', () => {
   const history = ref([])
   const currentSearch = ref(null)
@@ -12,7 +43,8 @@ export const useSearchStore = defineStore('search', () => {
     loading.value = true
     try {
       const { data } = await searchApi.getSearchHistory()
-      history.value = data
+      // Backend returns { total, items }
+      history.value = (data.items ?? []).map(normalizeSearch)
     } catch (e) {
       error.value = e.response?.data?.detail || 'Ошибка загрузки истории'
     } finally {
@@ -20,55 +52,30 @@ export const useSearchStore = defineStore('search', () => {
     }
   }
 
-  // async function createSearch(queryText) {
-  //   loading.value = true
-  //   error.value = null
-  //   try {
-  //     const { data } = await searchApi.createSearch({ query_text: queryText })
-  //     currentSearch.value = data
-  //     history.value.unshift(data)
-  //     return data
-  //   } catch (e) {
-  //     error.value = e.response?.data?.detail || 'Ошибка поиска'
-  //     return null
-  //   } finally {
-  //     loading.value = false
-  //   }
-  // }
-  async function createSearch(queryText) {
-  loading.value = true
-  await new Promise(r => setTimeout(r, 1500)) // тоже мок
-  const mockResult = {
-    id: Date.now(),
-    query_text: queryText,
-    created_at: new Date().toISOString(),
-    verdict: [
-      { user_id: 10, full_name: 'Козлов Дмитрий', team_role: 'senior', age: 31,
-        disc_type: 'D', compatibility_score: 87,
-        motivation_profile: { Карьера: 'высокая' },
-        description: 'Сильный технический лидер с опытом в agile-командах.' },
-      { user_id: 11, full_name: 'Новикова Елена', team_role: 'middle', age: 27,
-        disc_type: 'I', compatibility_score: 74,
-        motivation_profile: { Команда: 'высокая' },
-        description: 'Хорошо работает в команде, высокий EQ.' },
-      { user_id: 12, full_name: 'Морозов Павел', team_role: 'lead', age: 38,
-        disc_type: 'C', compatibility_score: 61,
-        motivation_profile: { Качество: 'высокая' },
-        description: 'Методичный, ориентирован на качество кода.' },
-    ]
+  async function createSearch(queryText, teamId) {
+    loading.value = true
+    error.value = null
+    try {
+      const { data } = await searchApi.createSearch({ query_text: queryText, team_id: teamId })
+      const normalized = normalizeSearch(data)
+      currentSearch.value = normalized
+      history.value.unshift(normalized)
+      return normalized
+    } catch (e) {
+      error.value = e.response?.data?.detail || 'Ошибка поиска'
+      return null
+    } finally {
+      loading.value = false
+    }
   }
-  currentSearch.value = mockResult
-  history.value.unshift(mockResult)
-  loading.value = false
-  return mockResult
-}
 
   async function getSearch(id) {
     loading.value = true
     try {
       const { data } = await searchApi.getSearch(id)
-      currentSearch.value = data
-      return data
+      const normalized = normalizeSearch(data)
+      currentSearch.value = normalized
+      return normalized
     } catch (e) {
       error.value = e.response?.data?.detail || 'Ошибка загрузки'
       return null

@@ -24,7 +24,7 @@
 
       <!-- Tags -->
       <div class="flex flex-wrap gap-1.5 mt-2">
-        <span v-if="candidate.disc_type" class="badge-accent">DISC: {{ candidate.disc_type }}</span>
+        <span v-if="dominantDisc" class="badge-accent">DISC: {{ dominantDisc }}</span>
         <span v-if="candidate.age" class="badge-ink">{{ candidate.age }} лет</span>
         <span v-for="tag in motivationTags" :key="tag" class="badge-jade">{{ tag }}</span>
       </div>
@@ -33,6 +33,16 @@
       <p v-if="candidate.description" class="text-xs text-ink-400 mt-2 line-clamp-2">
         {{ candidate.description }}
       </p>
+
+      <!-- Strengths & risks (shown when available) -->
+      <div v-if="candidate.strengths?.length || candidate.risks?.length" class="flex gap-3 mt-2 flex-wrap">
+        <div v-if="candidate.strengths?.length" class="flex flex-wrap gap-1">
+          <span v-for="s in candidate.strengths.slice(0, 2)" :key="s" class="badge-jade text-xs">✓ {{ s }}</span>
+        </div>
+        <div v-if="candidate.risks?.length" class="flex flex-wrap gap-1">
+          <span v-for="r in candidate.risks.slice(0, 1)" :key="r" class="badge-ink text-xs text-rose-400">⚠ {{ r }}</span>
+        </div>
+      </div>
     </div>
 
     <ChevronRight class="w-4 h-4 text-ink-200 group-hover:text-accent transition-colors shrink-0 mt-1" />
@@ -54,6 +64,12 @@ const router = useRouter()
 const initials = computed(() => {
   const name = props.candidate.full_name || ''
   return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || 'K'
+})
+
+const dominantDisc = computed(() => {
+  const d = props.candidate.disc_profile
+  if (!d) return null
+  return Object.entries(d).sort((a, b) => b[1] - a[1])[0]?.[0] ?? null
 })
 
 const gradients = [

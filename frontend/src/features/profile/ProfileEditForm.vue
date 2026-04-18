@@ -113,8 +113,7 @@ const teamRoles = [
   { value: 'middle', label: 'Middle' },
   { value: 'senior', label: 'Senior' },
   { value: 'lead', label: 'Lead' },
-  { value: 'manager', label: 'Manager' },
-  { value: 'director', label: 'Director' },
+  { value: 'principal', label: 'Principal' },
 ]
 
 const discColors = {

@@ -8,7 +8,7 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 
 
 @router.post("/register", response_model=UserFull, status_code=status.HTTP_201_CREATED)
-async def register(user_in: UserCreate):
+async def register(user_in: UserCreate) -> UserFull:
     try:
         return await auth_service.register_user(user_in)
     except ValueError as e:
@@ -16,7 +16,7 @@ async def register(user_in: UserCreate):
 
 
 @router.post("/login", response_model=TokenPair)
-async def login(user_in: UserLogin):
+async def login(user_in: UserLogin) -> TokenPair:
     user = await auth_service.authenticate_user(user_in.email, user_in.password)
     if not user:
         raise HTTPException(
@@ -32,11 +32,14 @@ async def login(user_in: UserLogin):
         data={"sub": str(user["id"])},
         expires_delta=timedelta(days=7)
     )
-    return {"access_token": access_token, "refresh_token": refresh_token, "token_type": "bearer"}
+    return {"access_token": access_token,
+            "refresh_token": refresh_token,
+            "token_type": "bearer"
+            }
 
 
 @router.post("/refresh", response_model=TokenPair)
-async def refresh(refresh_data: TokenRefresh):
+async def refresh(refresh_data: TokenRefresh) -> TokenPair:
     try:
         new_access = auth_service.refresh_access_token(refresh_data.refresh_token)
         return {

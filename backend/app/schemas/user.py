@@ -62,6 +62,11 @@ class UserFull(UserShort):
     updated_at: datetime
     model_config = {"from_attributes": True}
 
+
+class UserList(BaseModel):
+    total: int
+    items: list[UserShort]
+
 class UserLogin(BaseModel):
     email: EmailStr
     password: str

@@ -3,6 +3,7 @@ from contextlib import asynccontextmanager
 from app.database.db import database
 
 from app.api.routers.auth import router as auth_router
+from app.api.routers.teams import router as teams_router
 from app.api.routers.users import router as users_router
 
 @asynccontextmanager
@@ -15,6 +16,7 @@ app = FastAPI(title="Team Builder API", lifespan=lifespan)
 
 app.include_router(auth_router)
 app.include_router(users_router)
+app.include_router(teams_router)
 
 @app.get("/health")
 async def health_check():

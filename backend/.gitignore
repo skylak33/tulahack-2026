@@ -30,7 +30,7 @@ htmlcov/
 .ruff_cache/
 
 # Environment variables
-.env
+../.env
 .env.*
 !.env.example
 

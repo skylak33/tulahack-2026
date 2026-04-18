@@ -40,7 +40,7 @@ def upgrade() -> None:
     sa.Column('id', sa.UUID(), nullable=False),
     sa.Column('manager_id', sa.UUID(), nullable=False),
     sa.Column('query_text', sa.Text(), nullable=False),
-    sa.Column('gemini_result', sa.JSON(), nullable=True),
+    sa.Column('verdict', sa.JSON(), nullable=True),
     sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=True),
     sa.ForeignKeyConstraint(['manager_id'], ['users.id'], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id')

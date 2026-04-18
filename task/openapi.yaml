@@ -22,10 +22,6 @@ components:
       type: string
       enum: [junior, middle, senior, lead, principal]
 
-    Generation:
-      type: string
-      enum: [Z, Y, X, boomer]
-
     DiscProfile:
       type: object
       properties:
@@ -54,7 +50,6 @@ components:
         - type: object
           properties:
             age:                { type: integer }
-            generation:         { $ref: '#/components/schemas/Generation' }
             team_role:          { $ref: '#/components/schemas/TeamRole' }
             disc_profile:       { $ref: '#/components/schemas/DiscProfile' }
             motivation_profile: { $ref: '#/components/schemas/MotivationProfile' }
@@ -70,7 +65,6 @@ components:
         full_name:          { type: string }
         role:               { $ref: '#/components/schemas/Role' }
         age:                { type: integer }
-        generation:         { $ref: '#/components/schemas/Generation' }
         team_role:          { $ref: '#/components/schemas/TeamRole' }
         disc_profile:       { $ref: '#/components/schemas/DiscProfile' }
         motivation_profile: { $ref: '#/components/schemas/MotivationProfile' }
@@ -80,7 +74,6 @@ components:
       properties:
         full_name:          { type: string }
         age:                { type: integer }
-        generation:         { $ref: '#/components/schemas/Generation' }
         team_role:          { $ref: '#/components/schemas/TeamRole' }
         disc_profile:       { $ref: '#/components/schemas/DiscProfile' }
         motivation_profile: { $ref: '#/components/schemas/MotivationProfile' }
@@ -128,7 +121,7 @@ components:
         id:            { type: string, format: uuid }
         manager_id:    { type: string, format: uuid }
         query_text:    { type: string }
-        gemini_result:
+        verdict:
           type: object
           properties:
             candidates:

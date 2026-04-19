@@ -20,22 +20,21 @@ async def login(user_in: UserLogin) -> TokenPair:
     user = await auth_service.authenticate_user(user_in.email, user_in.password)
     if not user:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Неверный email или пароль"
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Неверный email или пароль"
         )
 
     access_token = auth_service.create_token(
         data={"sub": str(user["id"]), "role": user["role"]},
-        expires_delta=timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+        expires_delta=timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES),
     )
     refresh_token = auth_service.create_token(
-        data={"sub": str(user["id"])},
-        expires_delta=timedelta(days=7)
+        data={"sub": str(user["id"])}, expires_delta=timedelta(days=7)
     )
-    return {"access_token": access_token,
-            "refresh_token": refresh_token,
-            "token_type": "bearer"
-            }
+    return {
+        "access_token": access_token,
+        "refresh_token": refresh_token,
+        "token_type": "bearer",
+    }
 
 
 @router.post("/refresh", response_model=TokenPair)
@@ -45,7 +44,7 @@ async def refresh(refresh_data: TokenRefresh) -> TokenPair:
         return {
             "access_token": new_access,
             "refresh_token": refresh_data.refresh_token,
-            "token_type": "bearer"
+            "token_type": "bearer",
         }
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(e))

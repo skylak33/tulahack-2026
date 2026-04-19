@@ -39,6 +39,6 @@ async def get_manager(current_user=Depends(get_current_user)):
     if current_user["role"] != "manager":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Недостаточно прав (нужна роль manager)"
+            detail="Недостаточно прав (нужна роль manager)",
         )
     return current_user

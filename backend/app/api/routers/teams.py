@@ -30,7 +30,9 @@ async def get_team(
 ) -> TeamOut:
     team = await team_repository.get_by_id(team_id)
     if team is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Команда не найдена")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Команда не найдена"
+        )
     if team["manager_id"] != current_user["id"]:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Нет доступа")
     return team
@@ -43,7 +45,9 @@ async def delete_team(
 ) -> None:
     team = await team_repository.get_by_id(team_id)
     if team is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Команда не найдена")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Команда не найдена"
+        )
     if team["manager_id"] != current_user["id"]:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Нет доступа")
     await team_repository.delete(team_id)
@@ -57,12 +61,16 @@ async def add_member(
 ) -> TeamOut:
     team = await team_repository.get_by_id(team_id)
     if team is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Команда не найдена")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Команда не найдена"
+        )
     if team["manager_id"] != current_user["id"]:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Нет доступа")
     user = await user_repository.get_by_id(data.user_id)
     if user is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Пользователь не найден")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Пользователь не найден"
+        )
     await team_repository.add_member(team_id, data.user_id)
     return await team_repository.get_by_id(team_id)
 
@@ -75,7 +83,9 @@ async def remove_member(
 ) -> None:
     team = await team_repository.get_by_id(team_id)
     if team is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Команда не найдена")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Команда не найдена"
+        )
     if team["manager_id"] != current_user["id"]:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Нет доступа")
     await team_repository.remove_member(team_id, user_id)

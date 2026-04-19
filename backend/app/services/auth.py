@@ -8,6 +8,7 @@ from app.config import SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES
 
 pwd_context = CryptContext(schemes=["argon2"], deprecated="auto")
 
+
 class AuthService:
     @staticmethod
     def get_password_hash(password: str) -> str:
@@ -48,9 +49,10 @@ class AuthService:
                 raise ValueError("Invalid token")
             return self.create_token(
                 data={"sub": user_id},
-                expires_delta=timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+                expires_delta=timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES),
             )
         except jwt.PyJWTError:
             raise ValueError("Token expired or invalid")
+
 
 auth_service = AuthService()

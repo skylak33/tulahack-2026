@@ -3,6 +3,7 @@ from app.database.models import users
 import uuid
 import sqlalchemy
 
+
 class UserRepository:
     async def get_by_email(self, email: str):
         query = users.select().where(users.c.email == email)
@@ -17,7 +18,9 @@ class UserRepository:
         return await database.fetch_one(query)
 
     async def update(self, user_id: uuid.UUID, data: dict):
-        query = users.update().where(users.c.id == user_id).values(**data).returning(users)
+        query = (
+            users.update().where(users.c.id == user_id).values(**data).returning(users)
+        )
         return await database.fetch_one(query)
 
     async def delete(self, user_id: uuid.UUID) -> None:

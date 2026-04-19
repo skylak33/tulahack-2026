@@ -24,7 +24,11 @@ class TeamRepository:
 
     async def create(self, manager_id: uuid.UUID, name: str) -> dict:
         team_id = uuid.uuid4()
-        query = teams.insert().values(id=team_id, name=name, manager_id=manager_id).returning(teams)
+        query = (
+            teams.insert()
+            .values(id=team_id, name=name, manager_id=manager_id)
+            .returning(teams)
+        )
         row = await database.fetch_one(query)
         return {**dict(row), "members": []}
 

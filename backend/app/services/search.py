@@ -11,6 +11,7 @@ from app.config import GEMINI_API_KEY
 
 # ── Gemini response schema ────────────────────────────────────────────────────
 
+
 class _CandidateAnalysis(BaseModel):
     user_id: str
     compatibility_score: float
@@ -26,6 +27,7 @@ class _GeminiVerdict(BaseModel):
 
 # ── Scoring ───────────────────────────────────────────────────────────────────
 
+
 def _disc_compatibility(team_members: list[dict], candidate: dict) -> float:
     """Score how well a candidate's DISC complements the team."""
     candidate_disc = candidate.get("disc_profile")
@@ -36,7 +38,10 @@ def _disc_compatibility(team_members: list[dict], candidate: dict) -> float:
     if not profiles:
         return 0.5
 
-    avg = {k: sum(p.get(k, 0) for p in profiles) / len(profiles) for k in ("D", "I", "S", "C")}
+    avg = {
+        k: sum(p.get(k, 0) for p in profiles) / len(profiles)
+        for k in ("D", "I", "S", "C")
+    }
     gaps = {k: max(0.0, 50 - avg[k]) for k in avg}
     total_gap = sum(gaps.values())
     if total_gap == 0:
@@ -48,9 +53,10 @@ def _disc_compatibility(team_members: list[dict], candidate: dict) -> float:
 
 # ── Serialization ─────────────────────────────────────────────────────────────
 
+
 def _serialize(obj) -> dict:
     result = {}
-    for k, v in (obj.items() if isinstance(obj, dict) else dict(obj).items()):
+    for k, v in obj.items() if isinstance(obj, dict) else dict(obj).items():
         if isinstance(v, UUID):
             result[k] = str(v)
         elif isinstance(v, datetime):
@@ -61,6 +67,7 @@ def _serialize(obj) -> dict:
 
 
 # ── Main service ──────────────────────────────────────────────────────────────
+
 
 async def analyze_candidates(
     query_text: str,
@@ -124,13 +131,15 @@ async def analyze_candidates(
         user_data = candidate_by_id.get(item["user_id"])
         if user_data is None:
             continue
-        result_candidates.append({
-            "user": _serialize(user_data),
-            "compatibility_score": item["compatibility_score"],
-            "compatibility_summary": item["compatibility_summary"],
-            "strengths": item["strengths"],
-            "risks": item["risks"],
-        })
+        result_candidates.append(
+            {
+                "user": _serialize(user_data),
+                "compatibility_score": item["compatibility_score"],
+                "compatibility_summary": item["compatibility_summary"],
+                "strengths": item["strengths"],
+                "risks": item["risks"],
+            }
+        )
 
     return {
         "candidates": result_candidates,

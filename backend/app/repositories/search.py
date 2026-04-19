@@ -33,7 +33,9 @@ class SearchRepository:
     async def get_by_manager(
         self, manager_id: uuid.UUID, limit: int = 20, offset: int = 0
     ) -> tuple[int, list[dict]]:
-        base = search_requests.select().where(search_requests.c.manager_id == manager_id)
+        base = search_requests.select().where(
+            search_requests.c.manager_id == manager_id
+        )
         count_base = (
             sa.select(sa.func.count())
             .select_from(search_requests)
@@ -41,7 +43,9 @@ class SearchRepository:
         )
         total = await database.fetch_val(count_base)
         items = await database.fetch_all(
-            base.order_by(search_requests.c.created_at.desc()).limit(limit).offset(offset)
+            base.order_by(search_requests.c.created_at.desc())
+            .limit(limit)
+            .offset(offset)
         )
         return total, [dict(r) for r in items]
 

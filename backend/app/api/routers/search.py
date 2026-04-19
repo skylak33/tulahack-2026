@@ -15,12 +15,18 @@ ManagerDep = Annotated[dict, Depends(get_manager)]
 
 
 @router.post("/", response_model=SearchRequestOut, status_code=status.HTTP_201_CREATED)
-async def create_search(data: SearchRequestCreate, current_user: ManagerDep) -> SearchRequestOut:
+async def create_search(
+    data: SearchRequestCreate, current_user: ManagerDep
+) -> SearchRequestOut:
     team = await team_repository.get_by_id(data.team_id)
     if team is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Команда не найдена")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Команда не найдена"
+        )
     if team["manager_id"] != current_user["id"]:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Нет доступа к команде")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Нет доступа к команде"
+        )
 
     search = await search_repository.create(current_user["id"], data.query_text)
 
@@ -54,7 +60,9 @@ async def get_search(
 ) -> SearchRequestOut:
     search = await search_repository.get_by_id(search_id)
     if search is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Запрос не найден")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Запрос не найден"
+        )
     if search["manager_id"] != current_user["id"]:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Нет доступа")
     return search
